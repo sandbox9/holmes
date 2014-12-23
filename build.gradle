@@ -1,0 +1,16 @@
+apply plugin: 'java'
+
+group = "sandbox9.framework"
+version = '1.0.SNAPSHOT'
+jar{
+    baseName = 'holmes'
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    testCompile group: 'junit', name: 'junit', version: '4.11'
+}
