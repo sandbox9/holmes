@@ -1,6 +1,13 @@
 package sandbox9.framework.holmes;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.servlet.http.HttpServletRequest;
+
+import static sandbox9.framework.holmes.ClientBrowser.*;
+import static sandbox9.framework.holmes.ClientDevice.*;
+import static sandbox9.framework.holmes.ClientOS.*;
 
 /**
  * UserAgent 문자열을 분석해 클라이언트의 정보를 찾아줌.
@@ -10,27 +17,34 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class SimpleRegexDetector implements ClientDetector {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     public static final String HEADER_USER_AGENT = "User-Agent";
-    public static final String HEADER_MOBILE_APP_VERSION = "x-mobileapp-version";
+    public static final String HEADER_MOBILE_APP_VERSION = "x-mobile-app-version";
+    public static final String DEFAULT_APP_VERSION = "NoSpecifiedVersion";
 
     @Override
     public ClientInfo detectAll(HttpServletRequest servletRequest) {
         String userAgentString = servletRequest.getHeader(HEADER_USER_AGENT);
-        ClientInfo clientInfo = detectDeviceInfo(userAgentString);
+        ClientInfo client = detectDeviceInfo(userAgentString);
 
-        String appVersionHeader = servletRequest.getHeader(HEADER_MOBILE_APP_VERSION);
-        String appVersion = detectAppVersion(appVersionHeader);
-        clientInfo.setAppVersion(appVersion);
-        return clientInfo;
+        String appVersion = detectAppVersion(servletRequest, client);
+        client.setAppVersion(appVersion);
+        return client;
     }
 
-    public String detectAppVersion(String appVersionHeader) {
+    public String detectAppVersion(HttpServletRequest servletRequest, ClientInfo client) {
+        String appVersionHeader = servletRequest.getHeader(HEADER_MOBILE_APP_VERSION);
+        if (appVersionHeader == null || appVersionHeader.length() < 1) {
+            logger.warn("APP Version이 지정되지 않은 사용자 요청이 들어왔습니다!(UA: " + client.getSource() + ")");
+            return DEFAULT_APP_VERSION;
+        }
         return appVersionHeader;
     }
 
     @Override
     public ClientInfo detectDeviceInfo(String userAgentString) {
-        ClientInfo client = new ClientInfo();
+        ClientInfo client = new ClientInfo(userAgentString);
         detectDevice(userAgentString, client);
         detectOS(userAgentString, client);
         detectBrowser(userAgentString, client);
@@ -41,17 +55,17 @@ public class SimpleRegexDetector implements ClientDetector {
     protected void detectBrowser(String userAgentString, ClientInfo client) {
         //TODO android browser는 상세하게 식별하기 위해 OS 버전과 콜라보로 식별할 수 있도록 추가함
         if (userAgentString.matches(".*(Safari/).*")) {
-            client.setBrowser(ClientBrowser.SAFARI);
+            client.setBrowser(SAFARI);
         } else if (userAgentString.matches(".*(NetFront/).*")) {
-            client.setBrowser(ClientBrowser.NETFRONT);
+            client.setBrowser(NETFRONT);
         } else if (userAgentString.matches(".*(Opera Mini/).*")) {
-            client.setBrowser(ClientBrowser.OPERA_MINI);
+            client.setBrowser(OPERA_MINI);
         } else if (userAgentString.matches(".*(Opera Mobi/).*")) {
-            client.setBrowser(ClientBrowser.OPERA_MOBI);
+            client.setBrowser(OPERA_MOBI);
         } else if (userAgentString.matches(".*(Dolfin/||Dolphin/).*")) {
-            client.setBrowser(ClientBrowser.DOLFIN);
+            client.setBrowser(DOLFIN);
         } else if (userAgentString.matches(".*(Silk/||Silk-Accelerated/).*")) {
-            client.setBrowser(ClientBrowser.SILK);
+            client.setBrowser(SILK);
         }
     }
 
@@ -59,50 +73,55 @@ public class SimpleRegexDetector implements ClientDetector {
         //TODO 설정 파일로 분리
         //TODO ios와 aos의 상세 버전을 추출해서 넣어주는 방식으로 변경
         if (userAgentString.matches(".*(iPhone OS 4).*")) {
-            client.setOS(ClientOS.IOS4);
+            client.setOS(IOS4);
         } else if (userAgentString.matches(".*(iPhone OS 5).*")) {
-            client.setOS(ClientOS.IOS5);
+            client.setOS(IOS5);
         } else if (userAgentString.matches(".*(iPhone OS 6).*")) {
-            client.setOS(ClientOS.IOS6);
+            client.setOS(IOS6);
         } else if (userAgentString.matches(".*(iPhone OS 7).*")) {
-            client.setOS(ClientOS.IOS7);
+            client.setOS(IOS7);
         } else if (userAgentString.matches(".*(iPhone OS 8).*")) {
-            client.setOS(ClientOS.IOS8);
+            client.setOS(IOS8);
         } else if (userAgentString.matches(".*(Android 2).*")) {
-            client.setOS(ClientOS.ANDROID2);
+            client.setOS(ANDROID2);
         } else if (userAgentString.matches(".*(Android 4).*")) {
-            client.setOS(ClientOS.ANDROID4);
+            client.setOS(ANDROID4);
         } else if (userAgentString.matches(".*(Linux).*")) {
-            client.setOS(ClientOS.LINUX);
+            client.setOS(LINUX);
         } else if (userAgentString.matches(".*(X11||Windows).*")) {
-            client.setOS(ClientOS.WINDOWS);
+            client.setOS(WINDOWS);
         } else if (userAgentString.matches(".*(Macintosh).*")) {
-            client.setOS(ClientOS.MACOSX);
+            client.setOS(MACOSX);
         }
     }
 
     protected void detectDevice(String userAgentString, ClientInfo client) {
         //TODO 설정 파일로 분리
-        if (userAgentString.matches(".*(iPhone).*")) {
-            client.setDevice(ClientDevice.IPHONE);
-        } else if (userAgentString.matches(".*(iPad).*")) {
-            client.setDevice(ClientDevice.IPAD);
-        } else if (userAgentString.matches(".*(iPod).*")) {
-            client.setDevice(ClientDevice.IPOD);
-        } else if (userAgentString.matches(".*(Android).*")) {
-            client.setDevice(ClientDevice.ANDROID);
+        if (userAgentString.matches(".*(\\(iPhone).*")) {
+            client.setDevice(IPHONE);
+        } else if (userAgentString.matches(".*(\\(iPad).*")) {
+            client.setDevice(IPAD);
+        } else if (userAgentString.matches(".*(\\(iPod).*")) {
+            client.setDevice(IPOD);
+        } else if (userAgentString.matches(".*(Android).*(Mobile).*")) {
+            client.setDevice(ANDROID);
         } else if (userAgentString.matches(".*(BlackBerry).*")) {
-            client.setDevice(ClientDevice.BLACKBERRY);
+            client.setDevice(BLACKBERRY);
         } else if (userAgentString.matches(".*(IEMobile).*")) {
-            client.setDevice(ClientDevice.WINDOW);
+            client.setDevice(WINDOW);
         } else if (userAgentString.matches(".*(Kindle).*")) {
-            client.setDevice(ClientDevice.KINDLE);
-        } else if (userAgentString.matches(".*(Kindle).*")) {
-            client.setDevice(ClientDevice.KINDLE);
+            client.setDevice(KINDLE);
+        } else if (isAndroidTablet(userAgentString)) {
+            client.setDevice(ANDROID_TABLET);
         } else if (userAgentString.matches(".*(Linux||X11||Windows||Macintosh).*")) {
-            client.setDevice(ClientDevice.PC);
+            client.setDevice(PC);
         } else {
-            client.setDevice(ClientDevice.NO_IDENTIFIED);
+            client.setDevice(NOT_IDENTIFIED);
         }
+    }
+
+    private boolean isAndroidTablet(String userAgentString) {
+        //TODO UA와 Screen size를 조합해 식별 필요
+        return userAgentString.matches(".*(블라블라).*");
     }
 }
