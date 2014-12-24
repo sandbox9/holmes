@@ -9,6 +9,7 @@ public class ClientInfo implements Serializable {
     private ClientDevice device;
     private ClientOS OS;
     private ClientBrowser browser;
+    private String appVersion;
 
     public void setDevice(ClientDevice device) {
         this.device = device;
@@ -32,5 +33,13 @@ public class ClientInfo implements Serializable {
 
     public ClientBrowser getBrowser() {
         return browser;
+    }
+
+    public void setAppVersion(String appVersion) {
+        this.appVersion = appVersion;
+    }
+
+    public String getAppVersion() {
+        return appVersion;
     }
 }

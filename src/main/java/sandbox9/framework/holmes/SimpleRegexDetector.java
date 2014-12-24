@@ -1,5 +1,7 @@
 package sandbox9.framework.holmes;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * UserAgent 문자열을 분석해 클라이언트의 정보를 찾아줌.
  * 가장 쉬운 문자열 매칭 방법을 사용해 전체 디바이스의 90% 이상의 식별율을 보여준다
@@ -8,14 +10,33 @@ package sandbox9.framework.holmes;
  */
 public class SimpleRegexDetector implements ClientDetector {
 
+    public static final String HEADER_USER_AGENT = "User-Agent";
+    public static final String HEADER_MOBILE_APP_VERSION = "x-mobileapp-version";
+
     @Override
-    public ClientInfo detect(String userAgentString) {
+    public ClientInfo detectAll(HttpServletRequest servletRequest) {
+        String userAgentString = servletRequest.getHeader(HEADER_USER_AGENT);
+        ClientInfo clientInfo = detectDeviceInfo(userAgentString);
+
+        String appVersionHeader = servletRequest.getHeader(HEADER_MOBILE_APP_VERSION);
+        String appVersion = detectAppVersion(appVersionHeader);
+        clientInfo.setAppVersion(appVersion);
+        return clientInfo;
+    }
+
+    public String detectAppVersion(String appVersionHeader) {
+        return appVersionHeader;
+    }
+
+    @Override
+    public ClientInfo detectDeviceInfo(String userAgentString) {
         ClientInfo client = new ClientInfo();
         detectDevice(userAgentString, client);
         detectOS(userAgentString, client);
         detectBrowser(userAgentString, client);
         return client;
     }
+
 
     protected void detectBrowser(String userAgentString, ClientInfo client) {
         //TODO android browser는 상세하게 식별하기 위해 OS 버전과 콜라보로 식별할 수 있도록 추가함
